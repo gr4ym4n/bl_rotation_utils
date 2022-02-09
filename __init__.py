@@ -1,5 +1,5 @@
 
-from math import cos, sin
+from math import atan2, cos, fabs, log, pi, sin, sqrt
 from typing import Any, Optional, Sequence, Tuple, Union
 from mathutils import Euler, Quaternion, Vector
 
@@ -29,6 +29,9 @@ def axis_angle_to_swing_twist_y(value: Sequence[float], quaternion: Optional[boo
 
 def axis_angle_to_swing_twist_z(value: Sequence[float], quaternion: Optional[bool]=False) -> Union[Tuple[Quaternion, float], Quaternion]:
     return axis_angle_to_swing_twist(value, 'Z', quaternion=quaternion)
+
+def axis_angle_to_logarithmic_map(value: Union[Sequence[float], Tuple[Sequence[float], float]]) -> Vector:
+    return quaternion_to_logarithmic_map(axis_angle_to_quaternion(value))
 
 def euler_to_axis_angle(value: Sequence[float], vectorize: Optional[bool]=False) -> Union[Tuple[Vector, float], Vector]:
     return quaternion_to_axis_angle(euler_to_quaternion(value), vectorize=vectorize)
@@ -65,6 +68,9 @@ def euler_to_aim_vector(value: Sequence[float], axis: str) -> Vector:
     if axis == 'Y': return euler_to_aim_vector_y(value)
     if axis == 'Z': return euler_to_aim_vector_z(value)
     raise ValueError()
+
+def euler_to_logarithmic_map(value: Sequence[float]) -> Vector:
+    return quaternion_to_logarithmic_map(euler_to_quaternion(value))
 
 def quaternion_to_axis_angle(quaternion: Sequence[float], vectorize: Optional[bool]=False) -> Union[Tuple[Vector, float], Vector]:
     axis, angle = as_quaternion(quaternion).to_axis_angle()
@@ -107,6 +113,37 @@ def quaternion_to_aim_vector(value: Sequence[float], axis: str) -> Vector:
     if axis == 'Y': return quaternion_to_aim_vector_y(value)
     if axis == 'Z': return quaternion_to_aim_vector_z(value)
     raise ValueError()
+
+def quaternion_to_logarithmic_map(value: Sequence[float]) -> Vector:
+    w, x, y, z = value
+    q = Vector((w, x, y, z))
+    b = sqrt(x**2 + y**2 + z**2)
+    if b <= 1.0000000000000002e-14 * abs(w):
+        if w < 0.0:
+            if fabs(w + 1.0) > 1.0000000000000002e-14:
+                q[0] = log(-w)
+                q[1] = pi
+                q[2] = 0.0
+                q[3] = 0.0
+            else:
+                q[0] = 0.0
+                q[1] = pi
+                q[2] = 0.0
+                q[3] = 0.0
+        else:
+            q[0] = log(w)
+            q[1] = 0.0
+            q[2] = 0.0
+            q[3] = 0.0
+    else:
+        v = atan2(b, w)
+        f = v / b
+        q[0] = log(w * w + b * b) / 2.0
+        q[1] = f * x
+        q[2] = f * y
+        q[3] = f * z
+
+    return q
 
 def swing_twist_x_to_euler(value: Union[Tuple[Sequence[float], float], Sequence[float]]) -> Euler:
     return quaternion_to_euler(swing_twist_x_to_quaternion(value))
@@ -211,3 +248,15 @@ def swing_twist_z_to_swing_twist_x(value: Union[Tuple[Sequence[float], float], S
 
 def swing_twist_z_to_swing_twist_y(value: Union[Tuple[Sequence[float], float], Sequence[float]]) -> Union[Tuple[Quaternion, float], Quaternion]:
     return quaternion_to_swing_twist_y(swing_twist_z_to_quaternion(value), quaternion=len(value) != 2)
+
+def swing_twist_x_to_logarithmic_map(value: Union[Tuple[Sequence[float], float], Sequence[float]]) -> Vector:
+    return quaternion_to_logarithmic_map(swing_twist_to_quaternion(value, 'X'))
+
+def swing_twist_y_to_logarithmic_map(value: Union[Tuple[Sequence[float], float], Sequence[float]]) -> Vector:
+    return quaternion_to_logarithmic_map(swing_twist_to_quaternion(value, 'Y'))
+
+def swing_twist_z_to_logarithmic_map(value: Union[Tuple[Sequence[float], float], Sequence[float]]) -> Vector:
+    return quaternion_to_logarithmic_map(swing_twist_to_quaternion(value, 'Z'))
+
+def swing_twist_to_logarithmic_map(value: Union[Tuple[Sequence[float], float], Sequence[float]], axis: str) -> Vector:
+    return quaternion_to_logarithmic_map(swing_twist_to_quaternion(value, axis))
