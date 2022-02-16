@@ -74,7 +74,7 @@ def euler_to_logarithmic_map(value: Sequence[float]) -> Vector:
 
 def quaternion_to_axis_angle(quaternion: Sequence[float], vectorize: Optional[bool]=False) -> Union[Tuple[Vector, float], Vector]:
     axis, angle = as_quaternion(quaternion).to_axis_angle()
-    return Vector((angle, axis[0], axis[1], axis[2])) if vectorize else axis, angle
+    return Vector((angle, axis[0], axis[1], axis[2])) if vectorize else (axis, angle)
 
 def quaternion_to_euler(quaternion: Sequence[float], order: Optional[str]='XYZ') -> Euler:
     return as_quaternion(quaternion).to_euler(order)
